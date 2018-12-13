@@ -116,5 +116,6 @@ def Sysinfo():
     sysinfo.update(mem)
     sysinfo.update(osver)
     return sysinfo
+    
 if __name__ == '__main__':
    print Sysinfo()

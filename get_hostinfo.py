@@ -9,17 +9,26 @@
 from subprocess import Popen, PIPE
 import os,sys
 
-''' 获取 ifconfig 命令的输出 '''
 def getIfconfig():
     p = Popen(['ifconfig'], stdout = PIPE)
-    data = p.stdout.read()
-    return data
+    data = p.stdout.read().split('\n\n')
+    return [i for i in data if i and not i.startswith('lo')]
 
 ''' 获取 dmidecode 命令的输出 '''
 def getDmi():
     p = Popen(['dmidecode'], stdout = PIPE)
     data = p.stdout.read()
     return data
+
+def parseIfconfig(data):
+    dic = {}
+    for devs in data:
+        lines = devs.split('\n')
+        devname = lines[0].split()[0]
+        #macaddr = lines[2].split()[1]
+        ipaddr  = lines[1].split()[1]
+        dic[devname] = [ipaddr]
+    return dic
 
 ''' 根据空行分段落 返回段落列表'''
 def parseData(data):
@@ -34,19 +43,6 @@ def parseData(data):
             new_line += line + '\n'
     parsed_data.append(new_line)
     return [i for i in parsed_data if i]
-
-''' 根据输入的段落数据分析出ifconfig的每个网卡ip信息 '''
-def parseIfconfig(parsed_data):
-    dic = {}
-    parsed_data = [i for i in parsed_data if not i.startswith('lo')]
-    for lines in parsed_data:
-        line_list = lines.split('\n')
-        devname = line_list[0].split()[0]
-        macaddr = line_list[2].split()[1]
-        ipaddr  = line_list[1].split()[1]
-        break
-    dic['ip'] = ipaddr
-    return dic
 
 ''' 根据输入的dmi段落数据 分析出指定参数 '''
 def parseDmi(parsed_data):
@@ -64,14 +60,6 @@ def getHostname():
     p = Popen(['hostname'], stdout = PIPE)
     hostname = p.stdout.read().split('.')[0]
     return {'hostname':hostname}
-
-''' 获取Linux系统的版本信息 '''
-def getOsVersion():
-    with open('/etc/issue') as fd:
-        for line in fd:
-            osver = line.strip()
-            break
-    return {'osver':osver}
 
 ''' 获取CPU的型号和CPU的核心数 '''
 def getCpu():
@@ -92,30 +80,41 @@ def getMemory():
             if line.startswith('MemTotal'):
                 mem = int(line.split()[1].strip())
                 break
-    mem = '%.f' % (mem / 1024.0) + ' MB'
+    mem = '%.f' % (mem / (1024.0*1024)) + 'GB'
     return {'Memory':mem}
 
-if __name__ == '__main__':
-    dic = {}
-    data_ip = getIfconfig()
-    parsed_data_ip = parseData(data_ip)
-    ip = parseIfconfig(parsed_data_ip)
-    
+''' 获取Linux系统的版本信息 '''
+def getOsVersion():
+    with open('/etc/redhat-release') as fd:
+        for line in fd:
+            osver = line.strip()
+            break
+    return {'osver':osver}
+
+class Mergdic(object):
+    def __init__(self,dicname,soucedic):
+    self.merg = soucedic.update(dicname)
+    return self.merg
+
+def Sysinfo():
+    sysinfo = {}
+    data = getIfconfig()
     data_dmi = getDmi()
     parsed_data_dmi = parseData(data_dmi)
-    dmi = parseDmi(parsed_data_dmi)
 
+    dmi = parseDmi(parsed_data_dmi)
+    ip = parseIfconfig(data)
     hostname = getHostname()
-    osver = getOsVersion()
     cpu = getCpu()
     mem = getMemory()
+    osver = getOsVersion()
     
-    dic.update(ip)
-    dic.update(dmi)
-    dic.update(hostname)
-    dic.update(osver)
-    dic.update(cpu)
-    dic.update(mem)
-    ''' 将获取到的所有数据信息并按简单格式对齐显示 '''
-    for k,v in dic.items():
-        print '%-10s:%s' % (k, v)
+    sysinfo.update(ip)
+    sysinfo.update(dmi)
+    sysinfo.update(hostname)
+    sysinfo.update(cpu)
+    sysinfo.update(mem)
+    sysinfo.update(osver)
+    return sysinfo
+if __name__ == '__main__':
+   print Sysinfo()

@@ -116,7 +116,6 @@ if __name__ == '__main__':
     dic.update(osver)
     dic.update(cpu)
     dic.update(mem)
-    print dic
     ''' 将获取到的所有数据信息并按简单格式对齐显示 '''
     for k,v in dic.items():
         print '%-10s:%s' % (k, v)

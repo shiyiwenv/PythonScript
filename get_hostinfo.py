@@ -7,7 +7,7 @@ import uuid,time,os
 import redis
 
 class Redis(object):
-    def __init__(self,ip,password,port=6379,db=1):
+    def __init__(self,ip,password,port=6379,db=0):
         try:
             self.r = redis.Redis(host=ip, password=password, port=port, db=db)
         except Exception as e:
@@ -104,10 +104,10 @@ def uuidConllector():
         with open(uuidfile) as f:
             return f.read()
     else:
-        uuid = str(uuid.uuid4()).replace("-","")
+        base_info = str(uuid.uuid4()).replace("-","")
         with open(uuidfile,'w') as f:
-            f.write(uuid)
-            return uuid
+            f.write(base_info)
+            return base_info
 
 def Total():
     date = time.strftime("%Y-%m-%d", time.localtime())
